@@ -2,6 +2,8 @@ const express = require('express');
 
 const mysql = require('mysql');
 
+const session = require('express-session');
+
 const app = express();
 
 app.use(express.static('assets'));
@@ -19,6 +21,14 @@ const connection = mysql.createConnection({
   password: PASSWORD_NAME,
   database: DATABASE_NAME,
 });
+
+app.use(
+  session({
+    secret: 'my_secret_key',
+    resave: false,
+    saveUninitialized: false,
+  }),
+);
 
 app.get('/', (req, res) => {
   res.render('top.ejs');
