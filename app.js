@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql');
 const session = require('express-session');
+const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -57,6 +58,66 @@ app.get('/article/:id', (req, res) => {
   );
 });
 
+app.get('/signup', (req, res) => {
+  res.render('signup.ejs', { errors: [] });
+});
+
+app.post('/signup',
+  (req, res, next) => {
+    const { username } = req.body;
+    const { email } = req.body;
+    const { password } = req.body;
+    const errors = [];
+
+    if (username === '') {
+      errors.push('Nama Pengguna kosong');
+    }
+    if (email === '') {
+      errors.push('Email kosong');
+    }
+    if (password === '') {
+      errors.push('Kata Sandi kosong');
+    }
+
+    if (errors.length > 0) {
+      res.render('signup.ejs', { errors });
+    } else {
+      next();
+    }
+  },
+  (req, res, next) => {
+    const { email } = req.body;
+    const errors = [];
+    connection.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email],
+      (error, results) => {
+        if (results.length > 0) {
+          errors.push('Gagal mendaftarkan pengguna');
+          res.render('signup.ejs', { errors });
+        } else {
+          next();
+        }
+      },
+    );
+  },
+  (req, res) => {
+    const { username } = req.body;
+    const { email } = req.body;
+    const { password } = req.body;
+    bcrypt.hash(password, 10, (error, hash) => {
+      connection.query(
+        'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+        [username, email, hash],
+        (error, results) => {
+          req.session.userId = results.insertId;
+          req.session.username = username;
+          res.redirect('/list');
+        },
+      );
+    });
+  });
+
 app.get('/login', (req, res) => {
   res.render('login.ejs');
 });
@@ -68,13 +129,19 @@ app.post('/login', (req, res) => {
     [email],
     (error, results) => {
       if (results.length > 0) {
-        if (req.body.password === results[0].password) {
-          req.session.userId = results[0].id;
-          req.session.username = results[0].username;
-          res.redirect('/list');
-        } else {
-          res.redirect('/login');
-        }
+        const plain = req.body.password;
+
+        const hash = results[0].password;
+
+        bcrypt.compare(plain, hash, (error, isEqual) => {
+          if (isEqual) {
+            req.session.userId = results[0].id;
+            req.session.username = results[0].username;
+            res.redirect('/list');
+          } else {
+            res.redirect('/login');
+          }
+        });
       } else {
         res.redirect('/login');
       }
