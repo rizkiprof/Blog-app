@@ -25,10 +25,10 @@ app.use(
 app.use((req, res, next) => {
   if (req.session.userId === undefined) {
     res.locals.username = 'Tamu';
-    req.locals.isLoggedIn = false;
+    res.locals.isLoggedIn = false;
   } else {
     res.locals.username = req.session.username;
-    req.locals.isLoggedIn = true;
+    res.locals.isLoggedIn = true;
   }
   next();
 });
