@@ -7,17 +7,7 @@
     <script src="/send_url.js"></script>
   </head>
   <body>
-    <header>
-      <div class="header-nav">
-        <a href="/">BLOG</a>
-        <p>Selamat datang, <%=locals.username %></p>
-        <ul>
-          <li><a href="/list">Artikel</a></li>
-          <li><a href="/login">Login</a></li>
-        </ul>
-      </div>
-      <p>Ken Belajar Blog</p>
-    </header>
+    <%- include('header') %>
     <main>
       <ul class="list">
         <% articles.forEach((article) => { %>
