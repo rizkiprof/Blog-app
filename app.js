@@ -1,7 +1,5 @@
 const express = require('express');
-
 const mysql = require('mysql');
-
 const session = require('express-session');
 
 const app = express();
@@ -9,17 +7,11 @@ const app = express();
 app.use(express.static('assets'));
 app.use(express.urlencoded({ extended: false }));
 
-// data base property
-const HOST_NAME = 'localhost';
-const USER_NAME = 'root';
-const PASSWORD_NAME = 'rizki';
-const DATABASE_NAME = 'list_app';
-
 const connection = mysql.createConnection({
-  host: HOST_NAME,
-  user: USER_NAME,
-  password: PASSWORD_NAME,
-  database: DATABASE_NAME,
+  host: 'localhost',
+  user: 'progate',
+  password: 'password',
+  database: 'blog',
 });
 
 app.use(
@@ -30,26 +22,62 @@ app.use(
   }),
 );
 
+app.use((req, res, next) => {
+  if (req.session.userId === undefined) {
+    console.log('Anda tidak login');
+    res.locals.username = 'Tamu';
+  } else {
+    console.log('Anda telah login');
+    res.locals.username = req.session.username;
+  }
+  next();
+});
+
 app.get('/', (req, res) => {
   res.render('top.ejs');
 });
 
 app.get('/list', (req, res) => {
   connection.query(
-    'SELECT * from articles',
+    'SELECT * FROM articles',
     (error, results) => {
       res.render('list.ejs', { articles: results });
     },
   );
 });
 
-app.get('/articles/:id', (req, res) => {
+app.get('/article/:id', (req, res) => {
   const { id } = req.params;
   connection.query(
-    'SELECT * from articles where id = ?',
+    'SELECT * FROM articles WHERE id = ?',
     [id],
     (error, results) => {
-      res.render('article.ejs', { articles: results[0] });
+      res.render('article.ejs', { article: results[0] });
+    },
+  );
+});
+
+app.get('/login', (req, res) => {
+  res.render('login.ejs');
+});
+
+app.post('/login', (req, res) => {
+  const { email } = req.body;
+  connection.query(
+    'SELECT * FROM users WHERE email = ?',
+    [email],
+    (error, results) => {
+      if (results.length > 0) {
+        if (req.body.password === results[0].password) {
+          req.session.userId = results[0].id;
+          req.session.username = results[0].username;
+          res.redirect('/list');
+        } else {
+          res.redirect('/login');
+        }
+      } else {
+        res.redirect('/login');
+      }
     },
   );
 });
