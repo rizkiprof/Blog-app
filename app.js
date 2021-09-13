@@ -61,6 +61,22 @@ app.get('/signup', (req, res) => {
   res.render('signup.ejs');
 });
 
+app.post('/signup', (req, res) => {
+  const { username } = req.body;
+  const { email } = req.body;
+  const { password } = req.body;
+
+  connection.query(
+    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+    [username, email, password],
+    (error, results) => {
+      req.session.userId = results.insertId;
+      req.session.username = username;
+      res.redirect('/list');
+    },
+  );
+});
+
 app.get('/login', (req, res) => {
   res.render('login.ejs');
 });
