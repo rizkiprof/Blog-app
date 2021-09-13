@@ -24,11 +24,11 @@ app.use(
 
 app.use((req, res, next) => {
   if (req.session.userId === undefined) {
-    console.log('Anda tidak login');
     res.locals.username = 'Tamu';
+    req.locals.isLoggedIn = false;
   } else {
-    console.log('Anda telah login');
     res.locals.username = req.session.username;
+    req.locals.isLoggedIn = true;
   }
   next();
 });
