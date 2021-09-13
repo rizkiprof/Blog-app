@@ -82,4 +82,10 @@ app.post('/login', (req, res) => {
   );
 });
 
+app.get('/logout', (req, res) => {
+  req.session.destroy((error) => {
+    res.redirect('/list');
+  });
+});
+
 app.listen(3000);
