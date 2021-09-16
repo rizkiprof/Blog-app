@@ -1,7 +1,9 @@
+/* eslint-disable no-shadow */
 const express = require('express');
-const mysql = require('mysql');
 const session = require('express-session');
+const mysql = require('mysql');
 const bcrypt = require('bcrypt');
+const config = require('./config');
 
 const app = express();
 
@@ -9,10 +11,10 @@ app.use(express.static('assets'));
 app.use(express.urlencoded({ extended: false }));
 
 const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'rizki',
-  database: 'blog_app',
+  host: config.db.host,
+  user: config.db.user,
+  password: config.db.password,
+  database: config.db.database,
 });
 
 app.use(
@@ -119,40 +121,61 @@ app.post('/signup',
   });
 
 app.get('/login', (req, res) => {
-  res.render('login.ejs');
+  res.render('login.ejs', { errors: [] });
 });
 
-app.post('/login', (req, res) => {
-  const { email } = req.body;
-  connection.query(
-    'SELECT * FROM users WHERE email = ?',
-    [email],
-    (error, results) => {
-      if (results.length > 0) {
-        const plain = req.body.password;
+app.post('/login',
+  (req, res, next) => {
+    const { email } = req.body;
+    const { password } = req.body;
+    const errors = [];
 
-        const hash = results[0].password;
+    if (email === '') {
+      errors.push('Email kosong');
+    }
+    if (password === '') {
+      errors.push('Kata Sandi kosong');
+    }
+    if (errors.length > 0) {
+      res.render('login.ejs', { errors });
+    } else {
+      next();
+    }
+  },
+  (req, res) => {
+    const { email } = req.body;
+    const errors = [];
+    connection.query(
+      'SELECT * FROM users WHERE email = ?',
+      [email],
+      (error, results) => {
+        if (results.length > 0) {
+          const plain = req.body.password;
 
-        bcrypt.compare(plain, hash, (error, isEqual) => {
-          if (isEqual) {
-            req.session.userId = results[0].id;
-            req.session.username = results[0].username;
-            res.redirect('/list');
-          } else {
-            res.redirect('/login');
-          }
-        });
-      } else {
-        res.redirect('/login');
-      }
-    },
-  );
-});
+          const hash = results[0].password;
+
+          bcrypt.compare(plain, hash, (error, isEqual) => {
+            if (isEqual) {
+              req.session.userId = results[0].id;
+              req.session.username = results[0].username;
+              res.redirect('/list');
+            } else {
+              errors.push('Email atau Kata sandi salah');
+              res.render('login.ejs', { errors });
+            }
+          });
+        } else {
+          errors.push('Email atau Kata sandi salah');
+          res.render('login.ejs', { errors });
+        }
+      },
+    );
+  });
 
 app.get('/logout', (req, res) => {
-  req.session.destroy((error) => {
+  req.session.destroy(() => {
     res.redirect('/list');
   });
 });
 
-app.listen(3000);
+app.listen(config.server.port);
